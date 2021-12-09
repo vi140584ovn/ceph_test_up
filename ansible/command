@@ -1,2 +1,0 @@
-VAGRANT_EXPERIMENTAL=disks vagrant up
-vagrant destroy -f
