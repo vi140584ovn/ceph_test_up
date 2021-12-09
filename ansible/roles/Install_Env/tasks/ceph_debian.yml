@@ -75,10 +75,6 @@
     echo $?
   register: result_check
 
-- name: var
-  debug:
-    var: result_check
-
 - name: create ceph volume
   shell: |
     ceph-volume lvm create --data /dev/{{ item }}
@@ -87,10 +83,6 @@
     - sdc
     - sdd
   when: result_check.stdout == "1"
-
-- name: var
-  debug:
-    var: ceph_mon
 
 - name: restart ceph-mon@node
   service:
