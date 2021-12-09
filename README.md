@@ -18,4 +18,4 @@
 
 7. cd ansible
 
-8. ansible-playbook -i hosts -e "tgt=yes" Install_Env.yml 
+8. ansible-playbook -i hosts Install_Env.yml 
