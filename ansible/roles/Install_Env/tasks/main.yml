@@ -1,0 +1,8 @@
+---
+# tasks file for Install_Env
+
+- include_tasks: ceph_centos.yml
+  when: ansible_distribution == "CentOS"
+
+- include_tasks: ceph_debian.yml
+  when: ansible_distribution == "Debian"

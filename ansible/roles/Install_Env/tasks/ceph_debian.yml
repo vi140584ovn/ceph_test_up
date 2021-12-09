@@ -1,0 +1,112 @@
+- name: install Ceph and others
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+  - ceph
+  - tgt-rbd
+
+- name: Copy ceph.conf
+  copy:
+    src: ceph.conf
+    dest: /etc/ceph
+
+- name: Check that the somefile exists
+  stat:
+    path: /tmp/monmap
+  register: stat_result
+
+- name: create map
+  shell: |
+    monmaptool --create --add node3 192.168.50.3 --fsid a7f64266-0894-4f1e-a635-d0aeaca0e993 /tmp/monmap
+    monmaptool --add node4 192.168.50.4 --fsid a7f64266-0894-4f1e-a635-d0aeaca0e993 /tmp/monmap
+    monmaptool --add node5 192.168.50.5 --fsid a7f64266-0894-4f1e-a635-d0aeaca0e993 /tmp/monmap
+  when: not stat_result.stat.exists
+
+- name: create a directory
+  file:
+    path: /var/lib/ceph/mon/ceph_{{ inventory_hostname }}
+    state: directory
+    mode: 0755
+    owner: ceph
+    group: ceph
+
+- name: mkfs
+  shell: |
+    sudo -u ceph ceph-mon --mkfs -i {{ inventory_hostname }} --monmap /tmp/monmap
+
+- name: enable ceph-mon@node
+  service:
+    name: ceph-mon@{{ inventory_hostname }}
+    enabled: yes
+
+- name: start ceph-mon@node
+  service:
+    name: ceph-mon@{{ inventory_hostname }}
+    state: started
+
+- name: enable-msgr2
+  shell: |
+    ceph mon enable-msgr2
+    ceph config set mon mon_warn_on_insecure_global_id_reclaim false
+    ceph config set mon mon_warn_on_insecure_global_id_reclaim_allowed false
+
+- name: create a directory
+  file:
+    path: /var/lib/ceph/mgr/ceph-{{ inventory_hostname }}
+    state: directory
+    mode: 0755
+    owner: ceph
+    group: ceph
+
+- name: enable ceph-mgr@node
+  service:
+    name: ceph-mgr@{{ inventory_hostname }}
+    enabled: yes
+
+- name: start ceph-mgr@node
+  service:
+    name: ceph-mgr@{{ inventory_hostname }}
+    state: started
+
+- name: ceck ceph volumes
+  shell: |
+    vgs |grep ceph
+    echo $?
+  register: result_check
+
+- name: var
+  debug:
+    var: result_check
+
+- name: create ceph volume
+  shell: |
+    ceph-volume lvm create --data /dev/{{ item }}
+  loop:
+    - sdb
+    - sdc
+    - sdd
+  when: result_check.stdout == "1"
+
+- name: var
+  debug:
+    var: ceph_mon
+
+- name: restart ceph-mon@node
+  service:
+    name: ceph-mon@{{ inventory_hostname }}
+    state: restarted
+  when: ceph_mon == "restart"
+
+- name: Configure and restart tgt
+  block:
+    - name: Copy ceph.conf to /etc/tgt/conf.d/ceph.conf
+      copy:
+        src: ceph_tgt.conf
+        dest: /etc/tgt/conf.d/ceph.conf
+
+    - name: restart tgt
+      service:
+        name: tgt
+        state: restarted
+  when: tgt
