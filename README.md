@@ -16,4 +16,6 @@
 
 6. vagrant dns --install
 
-7. ansible-playbook -i hosts -e "tgt=yes" Install_Env.yml 
+7. cd ansible
+
+8. ansible-playbook -i hosts -e "tgt=yes" Install_Env.yml 
