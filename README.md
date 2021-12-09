@@ -7,7 +7,8 @@
    - vagrant-dns
 
 2. Install vagrant-dns
-   vagrant plugin install vagrant-dns
+
+`   vagrant plugin install vagrant-dns`
 
 3. git clone git@github.com:vi140584ovn/ceph_test_up.git
 
